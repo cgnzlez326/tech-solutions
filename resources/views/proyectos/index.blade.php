@@ -17,6 +17,11 @@
 </head>
 <body>
     <h1>Gestión de Proyectos - Tech Solutions</h1>
+    <p>Demostración: los proyectos son estáticos; crear, editar y eliminar no guarda cambios.</p>
+
+    @if (session('success'))
+        <p role="status">{{ session('success') }}</p>
+    @endif
     
     <!-- Este sería el componente reutilizable que consume el servicio externo de la UF -->
     <x-uf-widget />
@@ -47,11 +52,7 @@
                 <td>
                     <a href="{{ route('proyectos.show', $proyecto['Id']) }}" class="btn btn-blue">Ver</a>
                     <a href="{{ route('proyectos.edit', $proyecto['Id']) }}" class="btn btn-blue">Editar</a>
-                    <form action="{{ route('proyectos.destroy', $proyecto['Id']) }}" method="POST" style="display:inline;">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="btn btn-red">Eliminar</button>
-                    </form>
+                    <a href="{{ route('proyectos.delete', $proyecto['Id']) }}" class="btn btn-red">Eliminar</a>
                 </td>
             </tr>
             @endforeach

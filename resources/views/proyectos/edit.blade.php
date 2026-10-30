@@ -12,20 +12,26 @@
 </head>
 <body>
     <h1>Actualizar Proyecto: {{ $proyecto['Nombre'] }}</h1>
+    @if ($errors->any())
+        <div role="alert">
+            <p>Corrige los siguientes campos:</p>
+            <ul>@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
+        </div>
+    @endif
     <form action="{{ route('proyectos.update', $proyecto['Id']) }}" method="POST">
         @csrf
         @method('PUT')
         <div class="form-group">
-            <label>Nombre del Proyecto:</label>
-            <input type="text" name="Nombre" value="{{ $proyecto['Nombre'] }}" required>
+            <label for="nombre">Nombre del Proyecto:</label>
+            <input id="nombre" type="text" name="Nombre" value="{{ old('Nombre', $proyecto['Nombre']) }}" required>
         </div>
         <div class="form-group">
-            <label>Estado:</label>
-            <input type="text" name="Estado" value="{{ $proyecto['Estado'] }}" required>
+            <label for="estado">Estado:</label>
+            <input id="estado" type="text" name="Estado" value="{{ old('Estado', $proyecto['Estado']) }}" required>
         </div>
         <div class="form-group">
-            <label>Monto:</label>
-            <input type="number" name="Monto" value="{{ $proyecto['Monto'] }}" required>
+            <label for="monto">Monto:</label>
+            <input id="monto" type="number" name="Monto" value="{{ old('Monto', $proyecto['Monto']) }}" min="0" step="any" required>
         </div>
         <button type="submit" class="btn-green">Actualizar Proyecto</button>
         <a href="{{ route('proyectos.index') }}">Cancelar</a>

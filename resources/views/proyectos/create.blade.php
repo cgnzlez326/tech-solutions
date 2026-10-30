@@ -12,27 +12,33 @@
 </head>
 <body>
     <h1>Agregar Nuevo Proyecto</h1>
+    @if ($errors->any())
+        <div role="alert">
+            <p>Corrige los siguientes campos:</p>
+            <ul>@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
+        </div>
+    @endif
     <form action="{{ route('proyectos.store') }}" method="POST">
         @csrf
         <div class="form-group">
-            <label>Nombre del Proyecto:</label>
-            <input type="text" name="Nombre" required>
+            <label for="nombre">Nombre del Proyecto:</label>
+            <input id="nombre" type="text" name="Nombre" value="{{ old('Nombre') }}" required>
         </div>
         <div class="form-group">
-            <label>Fecha de Inicio:</label>
-            <input type="date" name="Fecha_Inicio" required>
+            <label for="fecha-inicio">Fecha de Inicio:</label>
+            <input id="fecha-inicio" type="date" name="Fecha_Inicio" value="{{ old('Fecha_Inicio') }}" required>
         </div>
         <div class="form-group">
-            <label>Estado:</label>
-            <input type="text" name="Estado" required>
+            <label for="estado">Estado:</label>
+            <input id="estado" type="text" name="Estado" value="{{ old('Estado') }}" required>
         </div>
         <div class="form-group">
-            <label>Responsable:</label>
-            <input type="text" name="Responsable" required>
+            <label for="responsable">Responsable:</label>
+            <input id="responsable" type="text" name="Responsable" value="{{ old('Responsable') }}" required>
         </div>
         <div class="form-group">
-            <label>Monto:</label>
-            <input type="number" name="Monto" required>
+            <label for="monto">Monto:</label>
+            <input id="monto" type="number" name="Monto" value="{{ old('Monto') }}" min="0" step="any" required>
         </div>
         <button type="submit" class="btn-blue">Guardar Proyecto</button>
         <a href="{{ route('proyectos.index') }}">Cancelar</a>

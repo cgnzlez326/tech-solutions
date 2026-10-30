@@ -64,7 +64,7 @@ Apache ejecuta el backend; mantener solo la terminal de `npm run dev -- --host=1
 
 ## Pruebas y documentación
 
-Ejecutar `php artisan test`. Sigue pendiente una prueba que espera 200 en `/`, aunque esa ruta redirige con 302.
+Ejecutar `php artisan test`.
 
 - [Auditoría y problemas conocidos](docs/AUDITORIA.md).
 - [Convenciones para agentes](AGENTS.md).
