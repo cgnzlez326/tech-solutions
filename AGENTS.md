@@ -6,6 +6,7 @@
 - Respeta `.editorconfig`, los locks de dependencias y las protecciones Apache. Publica desde `public/`.
 - No publiques secretos, bases locales, dependencias descargadas ni archivos generados. Conserva configuración y datos personales al probar.
 - Informa qué cambió, qué se comprobó y los límites pendientes. Distingue fallos previos de regresiones.
+- Aplica [tech-git](.agents/skills/tech-git/SKILL.md) en cada cambio para mantener una rama y un PR por unidad lógica.
 
 ## Skills del repositorio
 
