@@ -10,7 +10,7 @@ Aplicación Laravel con vistas Blade, rutas web y un componente reutilizable par
 - PHP **8.4.1 o superior**, con las extensiones exigidas por Composer y `pdo_sqlite`/`sqlite3`. Esta copia se comprobó con **PHP 8.5.12** y **Laravel 13.39.0**.
 - Extensiones PHP: `ctype`, `curl`, `dom`, `fileinfo`, `filter`, `hash`, `iconv`, `json`, `mbstring`, `openssl`, `pcre`, `PDO`, `pdo_sqlite`, `session`, `sqlite3`, `tokenizer`, `xml`, `xmlwriter`. `zip` facilita instalar dependencias.
 - Acceso a Internet para descargar dependencias y consultar la UF.
-- Node.js y npm son opcionales para las pantallas actuales: sus estilos están dentro de las vistas y no usan `@vite`.
+- Node.js **24.20.0** y npm **11.19.0**, versiones comprobadas para instalar y compilar el frontend. Los instaladores y binarios para cada sistema están en [la distribución oficial de Node 24.20.0](https://nodejs.org/dist/v24.20.0/). `.nvmrc` declara esa versión para gestores compatibles; no cambia por sí solo el Node del PATH. `package-lock.json` fija las dependencias npm.
 
 `composer.json` permite PHP `^8.3`, pero **las versiones fijadas en `composer.lock` requieren al menos PHP 8.4.1**. No ejecutar `composer update` ni ignorar los requisitos de plataforma para evitar este requisito.
 
@@ -30,6 +30,8 @@ php --ini
 php -m
 composer --version
 git --version
+node --version
+npm --version
 ```
 
 El PHP de consola y el de Apache pueden ser distintos. Comprobar ambos si se utiliza un servidor web.
@@ -41,46 +43,66 @@ Los siguientes comandos funcionan en Bash (Linux/macOS), PowerShell y la termina
 ```sh
 git clone https://github.com/cgnzlez326/tech-solutions.git
 cd tech-solutions
-composer install
-composer check-platform-reqs
-php -r "file_exists('.env') || copy('.env.example', '.env');"
-php artisan key:generate
-php -r "file_exists('database/database.sqlite') || touch('database/database.sqlite');"
-php artisan migrate
-php artisan serve --host=127.0.0.1 --port=8000
+composer run setup
 ```
 
-Abrir <http://127.0.0.1:8000/proyectos>. Para detener el servidor, pulsar `Ctrl+C`.
+El comando instala dependencias de Composer desde el lock, comprueba PHP/extensiones, crea `.env` si falta, genera una clave solo cuando está vacía, crea SQLite si falta, ejecuta migraciones pendientes y prepara el frontend con `npm ci` y `npm run build`. Necesita Internet, también para las fuentes utilizadas durante el build. Se detiene si falla un paso y devuelve un código de salida distinto de cero; se puede repetir después de corregir la causa.
 
 La configuración de ejemplo utiliza SQLite. Las migraciones crean las tablas de sesiones, caché, usuarios y trabajos; **no crean proyectos**, porque estos son estáticos. No hace falta instalar MySQL. Cada clon genera su propio `.env`, clave y archivo SQLite: ninguno se descarga del repositorio.
 
 En Linux/macOS, el usuario que ejecuta PHP necesita permiso de escritura en `storage`, `bootstrap/cache` y `database`. Si se utiliza Apache o PHP-FPM, concederlo mediante el propietario o grupo del proceso web; no usar permisos `777`.
 
-No usar `composer run setup` en una instalación que ya tenga datos: genera una clave nueva y ejecuta pasos adicionales. Los comandos anteriores permiten revisar cada paso.
+Se puede repetir el setup: conserva un `.env` existente, su clave no vacía y los datos de SQLite. Las migraciones se ejecutan de forma incremental; no usa `migrate:fresh`, `refresh` ni `--force`. Por seguridad, la preparación automática solo admite `APP_ENV=local`, la base SQLite predeterminada `database/database.sqlite` y ninguna `DB_URL`. Si existe configuración cacheada, ejecutar `php artisan config:clear` antes. Para otra base de datos o entorno, revisar su configuración y ejecutar las migraciones manualmente; el setup no modifica esas conexiones.
+
+Si falta la variable `APP_KEY` en un `.env` existente, agregar una línea `APP_KEY=` antes de repetir el comando. No se reemplaza el archivo por el ejemplo para corregir ese error. El setup prepara el proyecto y termina; no deja servidores ejecutándose.
+
+## Desarrollo con dos terminales
+
+Después del setup, abrir dos terminales en la raíz del proyecto:
+
+**Terminal 1 — backend Laravel:**
+
+```sh
+php artisan serve --host=127.0.0.1 --port=8000
+```
+
+**Terminal 2 — frontend Vite:**
+
+```sh
+npm run dev -- --host=127.0.0.1
+```
+
+Abrir <http://127.0.0.1:8000/proyectos>. Vite suele escuchar en el puerto 5173 y sirve recursos de frontend; la aplicación se visita en la URL del backend. Detener cada proceso con `Ctrl+C`.
+
+Las vistas de proyectos actuales usan CSS integrado y no incluyen `@vite`: se pueden abrir solo con el backend y no reciben recarga de estilos desde Vite. La segunda terminal permite trabajar con los recursos que sí utilizan Vite; el setup no cambia las vistas para conectarlas automáticamente.
 
 ## Laragon y Apache
 
 1. Clonar en la carpeta de proyectos de Laragon, por ejemplo `C:\laragon\www\tech-solutions`.
-2. Seleccionar PHP 8.5.12, abrir una terminal nueva y ejecutar los pasos de instalación anteriores hasta `php artisan migrate`.
+2. Seleccionar PHP 8.5.12 **Thread Safe x64** para el módulo Apache y activar las extensiones de PHP indicadas arriba. Abrir una terminal nueva desde Laragon, comprobar `php -v`, `node -v` y `npm -v`, y ejecutar `composer run setup` dentro del clon. Deben coincidir con las versiones compatibles/comprobadas descritas arriba.
 3. Para un dominio local, apuntar el **DocumentRoot del sitio a `tech-solutions/public`**, habilitar `mod_rewrite` y permitir las reglas de `.htaccess`. Recargar Apache después de cambiar su configuración.
 4. Ajustar `APP_URL` en `.env` al dominio local utilizado. No publicar `.env`.
 
+Si Laragon administra Node, se puede agregar `node-24.20=https://nodejs.org/dist/v24.20.0/node-v24.20.0-win-x64.zip` a su configuración mediante **Menu → Tools → Quick add → Configuration**, instalar la entrada desde Quick add y seleccionarla en **Menu → Node.js → Version**. Abrir otra terminal y comprobar `node -v` y `npm -v`: Laragon puede dar prioridad a otra versión aunque Node 24.20.0 esté instalado globalmente.
+
 La copia de Laragon también se comprobó mediante <http://localhost/tech-solutions/public/proyectos>.
+
+Con Apache iniciado, este ya es el backend: no hace falta ejecutar además `php artisan serve`. Para desarrollar el frontend, abrir una terminal en el proyecto y ejecutar `npm run dev -- --host=127.0.0.1`. Visitar el dominio de Apache o la URL local anterior, no el puerto de Vite. Si se utiliza `php artisan serve` en lugar de Apache, seguir el flujo de dos terminales anterior.
 
 Se conservan dos protecciones deliberadas: `.htaccess` en la raíz deniega el acceso al código y `public/.htaccess` contiene `Require local`. Por eso Apache solo admite visitas desde el equipo local y acceder a `/tech-solutions/` devuelve 403; usar la URL con `/public/proyectos` o un sitio cuyo DocumentRoot sea `public`. Para exponer el proyecto en otro entorno, configurar primero los controles de acceso del servidor. No eliminar estas protecciones para resolver un 403 sin revisar la causa.
 
 El servidor `php artisan serve` es para desarrollo y no procesa las reglas `.htaccess`; mantenerlo enlazado a `127.0.0.1`.
 
-## Recursos de frontend opcionales
+## Compilación del frontend
 
-Solo es necesario compilar si se empieza a utilizar el CSS/JavaScript de Vite en las vistas:
+El setup ya instala y compila el frontend. Para repetir esos pasos por separado:
 
 ```sh
-npm install
+npm ci
 npm run build
 ```
 
-Instalar antes una versión de Node.js compatible con las dependencias de `package.json`. El repositorio conserva `.npmrc` con `ignore-scripts=true`; no deshabilitarlo de forma global para resolver un error de una dependencia. La instalación y compilación del frontend no son necesarias para abrir las pantallas actuales y no forman parte de la prueba de arranque descrita abajo.
+Se comprobaron Node.js 24.20.0, npm 11.19.0, Vite 8.3.5, `npm ci`, `npm run build` y el servidor de desarrollo con respuestas HTTP 200 para el cliente Vite y las entradas CSS/JavaScript. `npm audit` no informó vulnerabilidades en el lock revisado. El repositorio conserva `.npmrc` con `ignore-scripts=true`; no deshabilitarlo de forma global para resolver un error de una dependencia. Los archivos compilados y `node_modules` permanecen excluidos de Git.
 
 ## Comprobaciones y límites actuales
 
@@ -91,7 +113,7 @@ php artisan view:cache
 php artisan test
 ```
 
-Comprobado en Windows con PHP 8.5.12 desde una copia limpia de los archivos versionados, sin reutilizar `vendor`, `.env` ni SQLite: `composer install`, requisitos de plataforma, generación de clave, creación de una base SQLite nueva, tres migraciones y compilación de Blade. El servidor de desarrollo respondió HTTP 200 en listado, creación, detalle y edición para un ID existente; `/` redirigió con 302. Las instrucciones de Linux/macOS usan los mismos comandos, pero no se ejecutaron en esos sistemas.
+Comprobado `composer run setup` en Windows con PHP 8.5.12, Node 24.20.0 y npm 11.19.0, desde una copia limpia en una ruta con espacios: instaló 110 paquetes Composer y 56 paquetes npm, generó clave y SQLite nuevos, ejecutó tres migraciones y compiló el frontend. Una segunda ejecución completa conservó el hash de `.env` y una fila centinela en SQLite. También se comprobaron la compilación de Blade y respuestas HTTP 200 en listado, creación, detalle y edición para un ID existente; `/` redirigió con 302. Las instrucciones de Linux/macOS usan los mismos comandos, pero no se ejecutaron en esos sistemas.
 
 Límites conocidos:
 
@@ -100,7 +122,7 @@ Límites conocidos:
 - Un ID inexistente puede producir HTTP 500 en vez de 404.
 - La vista de eliminación no está enlazada y tiene fijado el ID `1`.
 - La consulta UF depende de Internet, tiene un límite de dos segundos y puede mostrar indisponibilidad temporal. Actualmente desactiva la verificación del certificado TLS y no comprueba la fecha del valor recibido.
-- La suite incluida tiene dos pruebas: una aprueba y otra falla porque espera HTTP 200 en `/`, aunque la ruta redirige con 302. Ese fallo pendiente no impide arrancar las pantallas.
+- La suite tiene cuatro pruebas: tres aprueban y una falla porque espera HTTP 200 en `/`, aunque la ruta redirige con 302. Los dos casos de `tests/Unit/SetupTest.php` comprueban que el setup conserve la configuración y los datos al repetirse, y rechace entornos/conexiones no admitidos o una variable `APP_KEY` ausente. Ese fallo previo de la ruta no impide arrancar las pantallas.
 
 Ver [la auditoría](docs/AUDITORIA.md) para los casos concretos y las correcciones propuestas.
 

@@ -31,6 +31,7 @@ rg -n "getDatosEstaticos|ProyectoController|proyectos\." app routes resources te
 | --- | --- |
 | Rutas web | `routes/web.php`: rutas explícitas, URLs en español y nombres `proyectos.*`. |
 | Arranque y middleware | `bootstrap/app.php`: configuración moderna de Laravel con `Application::configure`. |
+| Preparación local | `composer run setup` y `scripts/setup.php`: dependencias bloqueadas, entorno local SQLite y frontend; preservar `.env`, clave existente y datos al repetir. |
 | Controlador | `app/Http/Controllers/ProyectoController.php`: recibe solicitudes, consulta el modelo y devuelve vistas o redirecciones. |
 | Datos de proyectos | `app/Models/Proyecto.php`: `getDatosEstaticos()` devuelve una colección de arrays. |
 | Pantallas | `resources/views/proyectos/`: Blade con HTML en español y estilos básicos integrados. |
@@ -80,6 +81,7 @@ Verifica que estas limitaciones sigan presentes antes de reportarlas o corregirl
 ## Validación y entrega
 
 - Para lógica no trivial añade una prueba pequeña que falle con el caso original y pase con el cambio. Incluye datos inválidos, ID inexistente o fallo externo cuando formen parte de lo modificado.
+- Si modificas el setup, ejecuta `tests/Unit/SetupTest.php` y comprueba el comando completo en una copia aislada. No pruebes instalación/reinstalación sobre la base de datos personal.
 - Ejecuta las comprobaciones pertinentes con PHP compatible:
 
 ```sh

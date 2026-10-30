@@ -33,11 +33,10 @@
     },
     "scripts": {
         "setup": [
-            "composer install",
-            "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
-            "@php artisan key:generate",
-            "@php artisan migrate --force",
-            "npm install --ignore-scripts",
+            "@composer install --no-interaction",
+            "@composer check-platform-reqs",
+            "@php scripts/setup.php",
+            "npm ci",
             "npm run build"
         ],
         "dev": [
