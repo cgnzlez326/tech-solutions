@@ -39,9 +39,7 @@ class UfWidget extends Component
             }
 
             $zonaChile = new \DateTimeZone('America/Santiago');
-            $fechaIndicador = preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha)
-                ? new \DateTimeImmutable($fecha, $zonaChile)
-                : (new \DateTimeImmutable($fecha, $zonaChile))->setTimezone($zonaChile);
+            $fechaIndicador = (new \DateTimeImmutable($fecha, $zonaChile))->setTimezone($zonaChile);
             $this->valorUf = $valor;
             $this->fechaUf = $fechaIndicador->format('d-m-Y');
             $this->esDeHoy = $fechaIndicador->format('Y-m-d') === now($zonaChile)->format('Y-m-d');
