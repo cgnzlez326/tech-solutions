@@ -4,30 +4,49 @@ namespace App\View\Components;
 
 use Closure;
 use Illuminate\Contracts\View\View;
-use Illuminate\View\Component;
 use Illuminate\Support\Facades\Http;
+use Illuminate\View\Component;
 
 class UfWidget extends Component
 {
-    public $valorUf;
+    public float $valorUf = 0;
+
+    public ?string $fechaUf = null;
+
+    public bool $esDeHoy = false;
 
     public function __construct()
     {
         try {
-            // Aquí le puse un límite  de 2 segundos porque o sino la página se quedaba cargando eternamente si no recibía la info de la Api
-            $response = Http::withoutVerifying()
-                            ->timeout(2)
-                            ->get('https://mindicador.cl/api/uf');
-            
-            if ($response->successful()) {
-                $data = $response->json();
-                $this->valorUf = $data['serie'][0]['valor'];
-            } else {
-                $this->valorUf = 0;
+            $response = Http::timeout(2)->get('https://mindicador.cl/api/uf');
+
+            if (! $response->successful()) {
+                return;
             }
-        } catch (\Exception $e) {
-            // Si la API falla o se demora más de 2 segundos, se apone en 0 para quedar en ese bucle
-            $this->valorUf = 0; 
+
+            $registro = $response->json('serie.0');
+            $valor = is_array($registro) ? ($registro['valor'] ?? null) : null;
+            $fecha = is_array($registro) ? ($registro['fecha'] ?? null) : null;
+
+            if (! is_numeric($valor) || ! is_string($fecha)) {
+                return;
+            }
+
+            $valor = (float) $valor;
+            $partesFecha = date_parse($fecha);
+            if (! is_finite($valor) || $valor <= 0 || $partesFecha['error_count'] || $partesFecha['warning_count'] || ! checkdate($partesFecha['month'], $partesFecha['day'], $partesFecha['year'])) {
+                return;
+            }
+
+            $zonaChile = new \DateTimeZone('America/Santiago');
+            $fechaIndicador = (new \DateTimeImmutable($fecha, $zonaChile))->setTimezone($zonaChile);
+            $this->valorUf = $valor;
+            $this->fechaUf = $fechaIndicador->format('d-m-Y');
+            $this->esDeHoy = $fechaIndicador->format('Y-m-d') === now($zonaChile)->format('Y-m-d');
+        } catch (\Throwable) {
+            $this->valorUf = 0;
+            $this->fechaUf = null;
+            $this->esDeHoy = false;
         }
     }
 
