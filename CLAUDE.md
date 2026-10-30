@@ -1,5 +1,3 @@
 # Instrucciones del proyecto
 
-Lee y aplica [AGENTS.md](AGENTS.md) antes de trabajar en este proyecto. Es la única fuente de convenciones para agentes: arquitectura, rutas, controladores, datos, vistas, pruebas y límites conocidos.
-
-No dupliques estas instrucciones aquí. Si cambia una convención del código, actualiza `AGENTS.md` junto al cambio y conserva esta referencia.
+Lee [AGENTS.md](AGENTS.md): contiene las reglas comunes y enlaza las skills de Git, patrones y testing. Usa el procedimiento que corresponda a la tarea; no dupliques sus instrucciones aquí.
