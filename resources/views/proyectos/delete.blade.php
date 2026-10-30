@@ -8,10 +8,10 @@
     </style>
 </head>
 <body>
-    <h1>¿Estás seguro de que deseas eliminar este proyecto?</h1>
-    <p>Esta acción no se puede deshacer.</p>
+    <h1>Confirmar eliminación: {{ $proyecto['Nombre'] }}</h1>
+    <p>Esta demostración es estática; el proyecto no se eliminará realmente.</p>
     
-    <form action="{{ route('proyectos.destroy', 1) }}" method="POST">
+    <form action="{{ route('proyectos.destroy', $proyecto['Id']) }}" method="POST">
         @csrf
         @method('DELETE')
         <button type="submit" class="btn-red">Sí, Eliminar Proyecto</button>
