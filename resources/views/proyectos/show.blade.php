@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <meta charset="UTF-8">
     <title>Detalle del Proyecto</title>
     <style>body { font-family: Arial, sans-serif; padding: 20px; }</style>
 </head>

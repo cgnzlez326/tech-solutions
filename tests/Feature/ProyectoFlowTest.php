@@ -26,11 +26,14 @@ class ProyectoFlowTest extends TestCase
 
     public function test_delete_confirmation_uses_the_requested_project_id(): void
     {
+        $this->get(route('proyectos.index'))
+            ->assertOk()
+            ->assertSee('href="'.route('proyectos.delete', 2).'"', false);
+
         $this->get('/proyectos/2/eliminar')
             ->assertOk()
-            ->assertSee('Desarrollo App Móvil')
-            ->assertSee('action="'.route('proyectos.destroy', 2).'"', false)
-            ->assertSee('no se eliminará realmente');
+            ->assertSee('Proyecto: Desarrollo App Móvil')
+            ->assertSee('action="'.route('proyectos.destroy', 2).'"', false);
     }
 
     public function test_valid_project_changes_are_simulated_and_reported_without_changing_static_data(): void
@@ -45,18 +48,18 @@ class ProyectoFlowTest extends TestCase
 
         $this->post('/proyectos', $newProject)
             ->assertRedirect(route('proyectos.index'))
-            ->assertSessionHas('success', 'Creación simulada: los datos no se guardaron.');
+            ->assertSessionHas('success', 'Solicitud validada. Los datos no se modifican.');
         $this->put('/proyectos/1', $newProject)
             ->assertRedirect(route('proyectos.index'))
-            ->assertSessionHas('success', 'Actualización simulada: los datos no se guardaron.');
+            ->assertSessionHas('success', 'Solicitud validada. Los datos no se modifican.');
         $this->delete('/proyectos/1')
             ->assertRedirect(route('proyectos.index'))
-            ->assertSessionHas('success', 'Eliminación simulada: los datos no se eliminaron.');
+            ->assertSessionHas('success', 'Solicitud validada. Los datos no se modifican.');
 
         $this->get('/proyectos')
             ->assertOk()
-            ->assertSee('Demostración: los proyectos son estáticos')
-            ->assertSee('Eliminación simulada: los datos no se eliminaron.')
+            ->assertSee('role="status"', false)
+            ->assertSee('Solicitud validada. Los datos no se modifican.')
             ->assertSee('Migración de Servidores')
             ->assertSee('Desarrollo App Móvil')
             ->assertDontSee('Proyecto de prueba');
@@ -96,12 +99,16 @@ class ProyectoFlowTest extends TestCase
 
         $this->from('/proyectos/1/editar')->followingRedirects()->put('/proyectos/1', [
             'Nombre' => 'Nombre conservado',
+            'Fecha_Inicio' => '2026-12-01',
             'Estado' => 'En progreso',
+            'Responsable' => 'Camilo',
             'Monto' => -10,
         ])
             ->assertOk()
             ->assertSee('Corrige los siguientes campos')
             ->assertSee('value="Nombre conservado"', false)
+            ->assertSee('value="2026-12-01"', false)
+            ->assertSee('value="Camilo"', false)
             ->assertSee('value="-10"', false);
     }
 
@@ -116,6 +123,10 @@ class ProyectoFlowTest extends TestCase
 
         $this->get('/proyectos/1/editar')
             ->assertOk()
+            ->assertSee('for="fecha-inicio"', false)
+            ->assertSee('id="fecha-inicio"', false)
+            ->assertSee('for="responsable"', false)
+            ->assertSee('id="responsable"', false)
             ->assertSee('for="monto"', false)
             ->assertSee('id="monto"', false);
     }

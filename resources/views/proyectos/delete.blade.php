@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <meta charset="UTF-8">
     <title>Eliminar Proyecto</title>
     <style>
         body { font-family: Arial, sans-serif; padding: 20px; text-align: center; }
@@ -8,13 +9,14 @@
     </style>
 </head>
 <body>
-    <h1>Confirmar eliminación: {{ $proyecto['Nombre'] }}</h1>
-    <p>Esta demostración es estática; el proyecto no se eliminará realmente.</p>
+    <h1>Confirmar solicitud de eliminación</h1>
+    <p>Proyecto: {{ $proyecto['Nombre'] }}</p>
+    <p>Los datos no se modifican.</p>
     
     <form action="{{ route('proyectos.destroy', $proyecto['Id']) }}" method="POST">
         @csrf
         @method('DELETE')
-        <button type="submit" class="btn-red">Sí, Eliminar Proyecto</button>
+        <button type="submit" class="btn-red">Confirmar solicitud</button>
         <a href="{{ route('proyectos.index') }}">Cancelar</a>
     </form>
 </body>
