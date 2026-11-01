@@ -13,8 +13,6 @@ class UfWidget extends Component
 
     public ?string $fechaUf = null;
 
-    public bool $esDeHoy = false;
-
     public function __construct()
     {
         try {
@@ -34,19 +32,21 @@ class UfWidget extends Component
 
             $valor = (float) $valor;
             $partesFecha = date_parse($fecha);
-            if (! is_finite($valor) || $valor <= 0 || $partesFecha['error_count'] || $partesFecha['warning_count'] || ! checkdate($partesFecha['month'], $partesFecha['day'], $partesFecha['year'])) {
+            if (! is_finite($valor) || $valor <= 0 || $partesFecha['error_count'] || $partesFecha['warning_count'] || ! checkdate($partesFecha['month'] ?? 0, $partesFecha['day'] ?? 0, $partesFecha['year'] ?? 0)) {
                 return;
             }
 
             $zonaChile = new \DateTimeZone('America/Santiago');
             $fechaIndicador = (new \DateTimeImmutable($fecha, $zonaChile))->setTimezone($zonaChile);
+            if ($fechaIndicador->format('Y-m-d') !== now($zonaChile)->format('Y-m-d')) {
+                return;
+            }
+
             $this->valorUf = $valor;
             $this->fechaUf = $fechaIndicador->format('d-m-Y');
-            $this->esDeHoy = $fechaIndicador->format('Y-m-d') === now($zonaChile)->format('Y-m-d');
         } catch (\Throwable) {
             $this->valorUf = 0;
             $this->fechaUf = null;
-            $this->esDeHoy = false;
         }
     }
 
