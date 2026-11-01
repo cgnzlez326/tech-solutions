@@ -1,6 +1,6 @@
 # Tech Solutions
 
-Prototipo académico de gestión de proyectos con Laravel 13.39.0 y Blade. Los proyectos son estáticos: crear, editar y eliminar no guarda cambios.
+Gestión de proyectos con Laravel 13.39.0, Blade y API JSON. Los proyectos son estáticos: las acciones de creación, edición y eliminación validan la solicitud y devuelven su resultado sin guardar cambios.
 
 Autores: Camilo González Moraga y Jeremías Roa Jerez.
 
@@ -62,9 +62,24 @@ node-24.20=https://nodejs.org/dist/v24.20.0/node-v24.20.0-win-x64.zip
 
 Apache ejecuta el backend; mantener solo la terminal de `npm run dev -- --host=127.0.0.1` para Vite. También está disponible [la URL de la carpeta local](http://localhost/tech-solutions/public/proyectos). Las reglas Apache incluidas permiten únicamente acceso local y protegen la raíz del proyecto.
 
+## API JSON
+
+| Método | Ruta | Resultado |
+| --- | --- | --- |
+| GET | `/api/proyectos` | Listado de proyectos |
+| GET | `/api/proyectos/{id}` | Proyecto por ID |
+| POST | `/api/proyectos` | Datos de creación validados |
+| PUT | `/api/proyectos/{id}` | Proyecto con los datos de actualización validados |
+| DELETE | `/api/proyectos/{id}` | Proyecto identificado para eliminación |
+
+POST y PUT requieren `Nombre`, `Fecha_Inicio`, `Estado`, `Responsable` y `Monto` (numérico, mayor o igual a cero). Envía JSON con `Content-Type: application/json`.
+
+GET devuelve los datos directamente. Las escrituras responden con HTTP 200 y las claves `message` y `datos`; no cambian los registros estáticos. Un ID inexistente responde 404 y una entrada inválida, 422. La API devuelve JSON aunque no se envíe la cabecera `Accept`.
+
 ## Pruebas y documentación
 
 Ejecutar `php artisan test`.
 
-- [Auditoría y problemas conocidos](docs/AUDITORIA.md).
+- [Auditoría histórica](docs/AUDITORIA.md).
 - [Convenciones para agentes](AGENTS.md).
+- [Informe de la evaluación](docs/INFORME_U1.md).
