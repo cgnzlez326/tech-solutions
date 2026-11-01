@@ -7,8 +7,13 @@ use App\Models\Proyecto;
 
 class ProyectoController extends Controller
 {
-    public function index() {
+    public function index(Request $request) {
         $proyectos = Proyecto::getDatosEstaticos();
+
+        if ($request->is('api/*')) {
+            return response()->json($proyectos);
+        }
+
         return view('proyectos.index', compact('proyectos'));
     }
 
@@ -17,20 +22,27 @@ class ProyectoController extends Controller
     }
 
     public function store(Request $request) {
-        $request->validate([
+        $datos = $request->validate([
             'Nombre' => ['required', 'string', 'max:255'],
             'Fecha_Inicio' => ['required', 'date'],
             'Estado' => ['required', 'string', 'max:255'],
             'Responsable' => ['required', 'string', 'max:255'],
             'Monto' => ['required', 'numeric', 'min:0'],
         ]);
+        $message = 'Solicitud validada. Los datos no se modifican.';
 
-        return redirect()->route('proyectos.index')->with('success', 'Creación simulada: los datos no se guardaron.');
+        return $request->is('api/*')
+            ? response()->json(['message' => $message, 'datos' => $datos])
+            : redirect()->route('proyectos.index')->with('success', $message);
     }
 
-    public function show($id) {
+    public function show(Request $request, $id) {
         $proyecto = Proyecto::getDatosEstaticos()->firstWhere('Id', $id);
-        abort_unless($proyecto, 404);
+        abort_unless($proyecto, 404, 'Proyecto no encontrado.');
+
+        if ($request->is('api/*')) {
+            return response()->json($proyecto);
+        }
 
         return view('proyectos.show', compact('proyecto'));
     }
@@ -50,20 +62,30 @@ class ProyectoController extends Controller
     }
 
     public function update(Request $request, $id) {
-        abort_unless(Proyecto::getDatosEstaticos()->firstWhere('Id', $id), 404);
+        $proyecto = Proyecto::getDatosEstaticos()->firstWhere('Id', $id);
+        abort_unless($proyecto, 404, 'Proyecto no encontrado.');
 
-        $request->validate([
+        $datos = $request->validate([
             'Nombre' => ['required', 'string', 'max:255'],
+            'Fecha_Inicio' => ['required', 'date'],
             'Estado' => ['required', 'string', 'max:255'],
+            'Responsable' => ['required', 'string', 'max:255'],
             'Monto' => ['required', 'numeric', 'min:0'],
         ]);
+        $message = 'Solicitud validada. Los datos no se modifican.';
 
-        return redirect()->route('proyectos.index')->with('success', 'Actualización simulada: los datos no se guardaron.');
+        return $request->is('api/*')
+            ? response()->json(['message' => $message, 'datos' => array_merge($proyecto, $datos)])
+            : redirect()->route('proyectos.index')->with('success', $message);
     }
 
-    public function destroy($id) {
-        abort_unless(Proyecto::getDatosEstaticos()->firstWhere('Id', $id), 404);
+    public function destroy(Request $request, $id) {
+        $proyecto = Proyecto::getDatosEstaticos()->firstWhere('Id', $id);
+        abort_unless($proyecto, 404, 'Proyecto no encontrado.');
+        $message = 'Solicitud validada. Los datos no se modifican.';
 
-        return redirect()->route('proyectos.index')->with('success', 'Eliminación simulada: los datos no se eliminaron.');
+        return $request->is('api/*')
+            ? response()->json(['message' => $message, 'datos' => $proyecto])
+            : redirect()->route('proyectos.index')->with('success', $message);
     }
 }

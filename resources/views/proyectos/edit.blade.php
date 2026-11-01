@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <meta charset="UTF-8">
     <title>Editar Proyecto</title>
     <style>
         body { font-family: Arial, sans-serif; padding: 20px; }
@@ -26,8 +27,16 @@
             <input id="nombre" type="text" name="Nombre" value="{{ old('Nombre', $proyecto['Nombre']) }}" required>
         </div>
         <div class="form-group">
+            <label for="fecha-inicio">Fecha de Inicio:</label>
+            <input id="fecha-inicio" type="date" name="Fecha_Inicio" value="{{ old('Fecha_Inicio', $proyecto['Fecha_Inicio']) }}" required>
+        </div>
+        <div class="form-group">
             <label for="estado">Estado:</label>
             <input id="estado" type="text" name="Estado" value="{{ old('Estado', $proyecto['Estado']) }}" required>
+        </div>
+        <div class="form-group">
+            <label for="responsable">Responsable:</label>
+            <input id="responsable" type="text" name="Responsable" value="{{ old('Responsable', $proyecto['Responsable']) }}" required>
         </div>
         <div class="form-group">
             <label for="monto">Monto:</label>

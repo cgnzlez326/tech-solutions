@@ -17,7 +17,6 @@
 </head>
 <body>
     <h1>Gestión de Proyectos - Tech Solutions</h1>
-    <p>Demostración: los proyectos son estáticos; crear, editar y eliminar no guarda cambios.</p>
 
     @if (session('success'))
         <p role="status">{{ session('success') }}</p>
