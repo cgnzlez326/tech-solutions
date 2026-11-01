@@ -11,14 +11,14 @@ Lee `AGENTS.md`. Recorre el flujo que afecta la tarea y busca sus consumidores c
 
 | Área | Patrón que debes comprobar y reutilizar |
 | --- | --- |
-| Rutas | `routes/web.php`: rutas explícitas, URLs españolas y nombres `proyectos.*`. Las estáticas como `/proyectos/crear` preceden a `/proyectos/{id}`. |
+| Rutas | Rutas explícitas: `routes/web.php` para Blade y `routes/api.php` para JSON bajo `/api/proyectos`. Las estáticas como `/proyectos/crear` preceden a `/proyectos/{id}`. |
 | Controladores | `ProyectoController`: acciones `index/create/store/show/edit/update/destroy`; consultas al modelo, vistas `proyectos.*` con `compact` y redirecciones nombradas. |
 | Datos | `Proyecto::getDatosEstaticos()` devuelve una colección de arrays con `Id`, `Nombre`, `Fecha_Inicio`, `Estado`, `Responsable`, `Monto`. No conviertas solo algunos consumidores en objetos. |
 | Vistas | Blade en `resources/views/proyectos/`, español, estilos básicos, `route(...)`, contenido escapado con `{{ ... }}` y formularios con `@csrf` y `@method`. |
 | UF | `UfWidget` y `components/uf-widget.blade.php`: mantener un componente reutilizable, timeout y presentación de indisponibilidad. |
 | Arranque | `bootstrap/app.php`: configuración moderna de Laravel; no copiar estructura de otra versión sin comprobarla. |
 
-No reemplaces rutas por `Route::resource` si cambia las URLs actuales. Los verbos vigentes son GET para pantallas, POST para crear, PUT para actualizar y DELETE para eliminar. Las respuestas actuales son HTML; una API JSON requiere un contrato solicitado.
+No reemplaces rutas por `Route::resource` si cambia las URLs actuales. Los verbos vigentes son GET para consultas, POST para crear, PUT para actualizar y DELETE para eliminar. `ProyectoController` comparte validación y datos entre web y API; las rutas `api/*` responden JSON sin depender de `Accept`. Las escrituras validan y devuelven su resultado sin modificar los registros estáticos.
 
 ## Asesorar e implementar
 
