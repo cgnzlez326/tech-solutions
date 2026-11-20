@@ -36,7 +36,7 @@ class ProyectoFlowTest extends TestCase
             ->assertSee('action="'.route('proyectos.destroy', 2).'"', false);
     }
 
-    public function test_valid_project_changes_are_simulated_and_reported_without_changing_static_data(): void
+    public function test_project_can_be_created_viewed_renamed_and_deleted_in_one_session(): void
     {
         $newProject = [
             'Nombre' => 'Proyecto de prueba',
@@ -46,23 +46,41 @@ class ProyectoFlowTest extends TestCase
             'Monto' => 250000,
         ];
 
+        $cookie = config('session.cookie');
+        $session = $this->get('/proyectos')->assertOk()->getCookie($cookie, false);
+        $this->withUnencryptedCookie($cookie, $session->getValue());
+
         $this->post('/proyectos', $newProject)
             ->assertRedirect(route('proyectos.index'))
-            ->assertSessionHas('success', 'Solicitud validada. Los datos no se modifican.');
-        $this->put('/proyectos/1', $newProject)
-            ->assertRedirect(route('proyectos.index'))
-            ->assertSessionHas('success', 'Solicitud validada. Los datos no se modifican.');
-        $this->delete('/proyectos/1')
-            ->assertRedirect(route('proyectos.index'))
-            ->assertSessionHas('success', 'Solicitud validada. Los datos no se modifican.');
-
+            ->assertSessionHas('success', 'Proyecto creado correctamente.');
         $this->get('/proyectos')
             ->assertOk()
             ->assertSee('role="status"', false)
-            ->assertSee('Solicitud validada. Los datos no se modifican.')
+            ->assertSee('Proyecto creado correctamente.')
+            ->assertSee($newProject['Nombre'])
+            ->assertSee(route('proyectos.show', 3));
+        $this->get('/proyectos/3')->assertOk()->assertSee($newProject['Nombre']);
+        $this->get('/proyectos/3/editar')->assertOk()->assertSee($newProject['Nombre']);
+        $this->get('/api/proyectos/3')->assertOk()->assertJsonPath('Nombre', $newProject['Nombre']);
+
+        $renamed = ['Nombre' => 'Nombre modificado'] + $newProject;
+        $this->put('/proyectos/3', $renamed)
+            ->assertRedirect(route('proyectos.index'))
+            ->assertSessionHas('success', 'Proyecto actualizado correctamente.');
+        $this->get('/proyectos')->assertOk()->assertSee($renamed['Nombre'])->assertDontSee($newProject['Nombre']);
+        $this->get('/proyectos/3')->assertOk()->assertSee($renamed['Nombre']);
+
+        $this->get('/proyectos/3/eliminar')->assertOk()->assertSee($renamed['Nombre']);
+        $this->delete('/proyectos/3')
+            ->assertRedirect(route('proyectos.index'))
+            ->assertSessionHas('success', 'Proyecto eliminado correctamente.');
+
+        $this->get('/proyectos')
+            ->assertOk()
             ->assertSee('Migración de Servidores')
             ->assertSee('Desarrollo App Móvil')
-            ->assertDontSee('Proyecto de prueba');
+            ->assertDontSee($renamed['Nombre']);
+        $this->get('/proyectos/3')->assertNotFound();
     }
 
     public function test_invalid_project_data_is_rejected_for_create_and_update(): void

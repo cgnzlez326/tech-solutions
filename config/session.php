@@ -11,14 +11,18 @@ return [
     |
     | This option determines the default session driver that is utilized for
     | incoming requests. Laravel supports a variety of storage options to
-    | persist session data. Database storage is a great default choice.
+    | persist session data. The file driver stores sessions locally.
     |
     | Supported: "file", "cookie", "database", "memcached",
     |            "redis", "dynamodb", "array"
     |
     */
 
-    'driver' => env('SESSION_DRIVER', 'database'),
+    'driver' => env('SESSION_DRIVER', 'file'),
+
+    // Incluso las lecturas guardan la sesión al finalizar la petición.
+    'block' => true,
+    'block_store' => 'file',
 
     /*
     |--------------------------------------------------------------------------
