@@ -36,7 +36,7 @@ class ProyectoFlowTest extends TestCase
             ->assertSee('action="'.route('proyectos.destroy', 2).'"', false);
     }
 
-    public function test_project_can_be_created_viewed_renamed_and_deleted_in_one_session(): void
+    public function test_project_can_be_created_viewed_renamed_and_deleted(): void
     {
         $newProject = [
             'Nombre' => 'Proyecto de prueba',

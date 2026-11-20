@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Proyecto;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class ProyectoApiTest extends TestCase
@@ -18,9 +19,13 @@ class ProyectoApiTest extends TestCase
         ];
     }
 
-    public function test_index_and_show_return_static_project_json_without_accept_header(): void
+    public function test_seeder_creates_private_json_and_reads_return_seed_projects_without_accept_header(): void
     {
         $proyectos = Proyecto::getDatosEstaticos()->all();
+
+        Storage::disk('local')->assertMissing('proyectos.json');
+        $this->artisan('db:seed', ['--class' => 'ProyectoSeeder'])->assertSuccessful();
+        Storage::disk('local')->assertExists('proyectos.json');
 
         $this->get('/api/proyectos')->assertOk()->assertExactJson($proyectos);
         $this->get('/api/proyectos/2')->assertOk()->assertExactJson($proyectos[1]);
@@ -33,16 +38,12 @@ class ProyectoApiTest extends TestCase
             ->assertExactJson(['message' => 'Proyecto no encontrado.']);
     }
 
-    public function test_api_writes_change_the_list_in_the_same_session(): void
+    public function test_api_writes_change_the_persisted_list(): void
     {
         $proyectos = Proyecto::getDatosEstaticos()->all();
         $proyecto = ['Id' => 3] + $this->datos();
 
-        $cookie = config('session.cookie');
-        $session = $this->get('/api/proyectos')->assertOk()->getCookie($cookie, false);
-        $this->withUnencryptedCookie($cookie, $session->getValue());
-
-        $this->call('POST', '/api/proyectos', [], $this->prepareCookiesForRequest(), [], [
+        $this->call('POST', '/api/proyectos', [], [], [], [
             'CONTENT_TYPE' => 'application/json',
         ], json_encode(['Id' => 99] + $this->datos(), JSON_THROW_ON_ERROR))
             ->assertOk()
@@ -67,7 +68,7 @@ class ProyectoApiTest extends TestCase
         $this->post('/api/proyectos', $this->datos())->assertJsonPath('datos.Id', 4);
     }
 
-    public function test_empty_list_stays_empty_for_its_session_only(): void
+    public function test_empty_list_persists_in_a_new_session_and_after_reseeding(): void
     {
         $proyectos = Proyecto::getDatosEstaticos()->all();
 
@@ -80,8 +81,24 @@ class ProyectoApiTest extends TestCase
         $this->delete('/api/proyectos/2')->assertOk();
         $this->get('/api/proyectos')->assertContent('[]');
 
+        $directorio = Storage::disk('local')->path('');
         $this->refreshApplication();
-        $this->call('GET', '/api/proyectos')->assertExactJson($proyectos);
+        config(['filesystems.disks.local.root' => $directorio]);
+
+        $this->call('GET', '/api/proyectos')->assertContent('[]');
+        $this->artisan('db:seed', ['--class' => 'ProyectoSeeder'])->assertSuccessful();
+        $this->call('GET', '/api/proyectos')->assertContent('[]');
+        $this->post('/api/proyectos', $this->datos())->assertJsonPath('datos.Id', 3);
+    }
+
+    public function test_write_does_not_replace_an_unreadable_json_file(): void
+    {
+        $archivo = Storage::disk('local');
+        $archivo->put('proyectos.json', '{');
+
+        $this->post('/api/proyectos', $this->datos())->assertInternalServerError();
+
+        $this->assertSame('{', $archivo->get('proyectos.json'));
     }
 
     public function test_write_validation_errors_are_json_without_accept_header(): void

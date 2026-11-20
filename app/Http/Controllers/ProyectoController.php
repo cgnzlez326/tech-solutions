@@ -59,7 +59,8 @@ class ProyectoController extends Controller
         $proyecto = Proyecto::getProyectos()->firstWhere('Id', $id);
         abort_unless($proyecto, 404, 'Proyecto no encontrado.');
 
-        $proyecto = Proyecto::actualizar($proyecto, $this->validarDatos($request));
+        $proyecto = Proyecto::actualizar($proyecto['Id'], $this->validarDatos($request));
+        abort_unless($proyecto, 404, 'Proyecto no encontrado.');
         $message = 'Proyecto actualizado correctamente.';
 
         return $request->is('api/*')
@@ -68,9 +69,8 @@ class ProyectoController extends Controller
     }
 
     public function destroy(Request $request, $id) {
-        $proyecto = Proyecto::getProyectos()->firstWhere('Id', $id);
+        $proyecto = Proyecto::eliminar($id);
         abort_unless($proyecto, 404, 'Proyecto no encontrado.');
-        Proyecto::eliminar($proyecto['Id']);
         $message = 'Proyecto eliminado correctamente.';
 
         return $request->is('api/*')

@@ -20,10 +20,6 @@ return [
 
     'driver' => env('SESSION_DRIVER', 'file'),
 
-    // Incluso las lecturas guardan la sesión al finalizar la petición.
-    'block' => true,
-    'block_store' => 'file',
-
     /*
     |--------------------------------------------------------------------------
     | Session Lifetime
