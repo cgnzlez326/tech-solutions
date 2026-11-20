@@ -33,7 +33,7 @@ Para crear el JSON con los dos proyectos de ejemplo:
 php artisan db:seed --class=ProyectoSeeder
 ```
 
-El seeder conserva el archivo existente. La primera consulta también lo genera si falta. El CRUD de proyectos usa el JSON temporalmente, hasta que el modelo se conecte a SQL.
+El seeder asigna los ejemplos de un archivo nuevo a un usuario de demostración. Conserva los archivos existentes. La primera consulta también genera el archivo si falta. El CRUD de proyectos usa el JSON temporalmente, hasta que el modelo se conecte a SQL.
 
 Si ya tienes un `.env` con `SESSION_DRIVER=database`, cámbialo a `SESSION_DRIVER=file` para guardar en archivos las sesiones que usan los formularios y la protección CSRF. Si usabas configuración en caché, ejecuta `php artisan config:clear`.
 
@@ -90,7 +90,9 @@ Las escrituras de proyectos requieren `Nombre`, `Fecha_Inicio`, `Estado`, `Respo
 
 Registro responde `201` con `message` y `user`. La contraseña debe tener al menos 8 caracteres y como máximo 72 bytes. Inicio de sesión responde `200` con `access_token`, `token_type` y `expires_in` (segundos), o `401` si las credenciales son incorrectas.
 
-La API y las pantallas usan el mismo archivo de proyectos. Para consumir la API desde un cliente HTTP, empieza con `GET /api/proyectos` y conserva las cookies en las solicitudes siguientes. Para POST, PUT y DELETE, envía también el valor de la cookie `XSRF-TOKEN` decodificado como cabecera `X-XSRF-TOKEN`.
+La API y las pantallas usan el mismo archivo de proyectos. Envía `Authorization: Bearer <access_token>` en todas las solicitudes a `/api/proyectos`. Un token ausente, inválido o vencido recibe un 401.
+
+`created_by` identifica al usuario que creó el proyecto. El servidor asigna este campo al crear un proyecto con autenticación y conserva el valor en las ediciones. Los registros sin autor conocido devuelven `null`.
 
 GET devuelve los datos directamente. Las escrituras responden con HTTP 200 y las claves `message` y `datos`. Un ID inexistente responde 404 y una entrada inválida, 422. La API devuelve JSON aunque no se envíe la cabecera `Accept`.
 

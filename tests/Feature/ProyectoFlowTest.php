@@ -2,11 +2,16 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class ProyectoFlowTest extends TestCase
 {
+    use RefreshDatabase;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -61,7 +66,8 @@ class ProyectoFlowTest extends TestCase
             ->assertSee(route('proyectos.show', 3));
         $this->get('/proyectos/3')->assertOk()->assertSee($newProject['Nombre']);
         $this->get('/proyectos/3/editar')->assertOk()->assertSee($newProject['Nombre']);
-        $this->get('/api/proyectos/3')->assertOk()->assertJsonPath('Nombre', $newProject['Nombre']);
+        $token = Auth::guard('api')->tokenById(User::factory()->create()->id);
+        $this->withToken($token)->get('/api/proyectos/3')->assertOk()->assertJsonPath('Nombre', $newProject['Nombre']);
 
         $renamed = ['Nombre' => 'Nombre modificado'] + $newProject;
         $this->put('/proyectos/3', $renamed)

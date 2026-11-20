@@ -22,7 +22,7 @@ class ProyectoController extends Controller
     }
 
     public function store(Request $request) {
-        $proyecto = Proyecto::crear($this->validarDatos($request));
+        $proyecto = Proyecto::crear($this->validarDatos($request), $request->user()?->getAuthIdentifier());
         $message = 'Proyecto creado correctamente.';
 
         return $request->is('api/*')
