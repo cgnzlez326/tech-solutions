@@ -2,11 +2,19 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class UfWidgetTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->actingAs(User::factory()->make(['id' => 1]), 'web');
+    }
+
     public function test_it_renders_the_uf_for_today_in_chile(): void
     {
         $this->travelTo(new \DateTimeImmutable('2026-05-01T02:30:00Z'));

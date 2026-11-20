@@ -10,11 +10,11 @@ use RuntimeException;
 
 class Proyecto extends Model
 {
-    public static function getDatosEstaticos(): Collection
+    public static function getDatosEstaticos(?int $creadorId = null): Collection
     {
         return collect([
-            ['Id' => 1, 'Nombre' => 'Migración de Servidores', 'Fecha_Inicio' => '2026-11-01', 'Estado' => 'Planificación', 'Responsable' => 'Juan Pérez', 'Monto' => 1500000],
-            ['Id' => 2, 'Nombre' => 'Desarrollo App Móvil', 'Fecha_Inicio' => '2026-11-15', 'Estado' => 'En progreso', 'Responsable' => 'Ana Gómez', 'Monto' => 3200000],
+            ['Id' => 1, 'Nombre' => 'Migración de Servidores', 'Fecha_Inicio' => '2026-11-01', 'Estado' => 'Planificación', 'Responsable' => 'Juan Pérez', 'Monto' => 1500000, 'created_by' => $creadorId],
+            ['Id' => 2, 'Nombre' => 'Desarrollo App Móvil', 'Fecha_Inicio' => '2026-11-15', 'Estado' => 'En progreso', 'Responsable' => 'Ana Gómez', 'Monto' => 3200000, 'created_by' => $creadorId],
         ]);
     }
 
@@ -23,12 +23,17 @@ class Proyecto extends Model
         return self::conBloqueo(fn ($ruta) => collect(self::leer($ruta)['registros']));
     }
 
-    public static function crear(array $datos): array
+    public static function inicializarEjemplos(int $creadorId): void
     {
-        return self::conBloqueo(function ($ruta) use ($datos) {
+        self::conBloqueo(fn ($ruta) => self::leer($ruta, $creadorId));
+    }
+
+    public static function crear(array $datos, ?int $creadorId): array
+    {
+        return self::conBloqueo(function ($ruta) use ($datos, $creadorId) {
             $estado = self::leer($ruta);
             $id = $estado['siguiente_id']++;
-            $proyecto = ['Id' => $id] + $datos;
+            $proyecto = ['Id' => $id, 'created_by' => $creadorId] + $datos;
             $estado['registros'][$id] = $proyecto;
             self::guardar($ruta, $estado);
 
@@ -91,14 +96,20 @@ class Proyecto extends Model
         }
     }
 
-    private static function leer(string $ruta): array
+    private static function leer(string $ruta, ?int $creadorId = null): array
     {
         clearstatcache(true, $ruta);
         if (is_file($ruta)) {
-            return json_decode(File::get($ruta), true, flags: JSON_THROW_ON_ERROR);
+            $estado = json_decode(File::get($ruta), true, flags: JSON_THROW_ON_ERROR);
+            $estado['registros'] = array_map(
+                fn (array $proyecto) => $proyecto + ['created_by' => null],
+                $estado['registros'],
+            );
+
+            return $estado;
         }
 
-        $proyectos = self::getDatosEstaticos();
+        $proyectos = self::getDatosEstaticos($creadorId);
         $estado = [
             'siguiente_id' => $proyectos->max('Id') + 1,
             'registros' => $proyectos->keyBy('Id')->all(),

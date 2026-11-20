@@ -18,6 +18,11 @@
 <body>
     <h1>Gestión de Proyectos - Tech Solutions</h1>
 
+    <form action="{{ route('logout') }}" method="POST">
+        @csrf
+        <button type="submit" class="btn btn-red">Cerrar sesión</button>
+    </form>
+
     @if (session('success'))
         <p role="status">{{ session('success') }}</p>
     @endif

@@ -25,13 +25,15 @@ composer run setup
 
 El setup instala dependencias, prepara `.env`, clave y SQLite, ejecuta migraciones y compila el frontend. Se puede repetir conservando configuración y datos; solo admite el entorno `local` y SQLite predeterminado. No requiere MySQL.
 
+Ejecuta `php artisan jwt:secret` una vez para generar la clave de autenticación en `.env`. Si la instalación ya existía, instala las dependencias con `composer install` y aplica la migración con `php artisan migrate`.
+
 Para crear el JSON con los dos proyectos de ejemplo:
 
 ```sh
 php artisan db:seed --class=ProyectoSeeder
 ```
 
-El seeder conserva el archivo existente. La primera consulta también lo genera si falta. El CRUD de proyectos usa el JSON temporalmente, hasta que el modelo se conecte a SQL.
+El seeder asigna los ejemplos de un archivo nuevo a un usuario de demostración. Conserva los archivos existentes. La primera consulta también genera el archivo si falta. El CRUD de proyectos usa el JSON temporalmente, hasta que el modelo se conecte a SQL.
 
 Si ya tienes un `.env` con `SESSION_DRIVER=database`, cámbialo a `SESSION_DRIVER=file` para guardar en archivos las sesiones que usan los formularios y la protección CSRF. Si usabas configuración en caché, ejecuta `php artisan config:clear`.
 
@@ -53,7 +55,7 @@ php artisan serve --host=127.0.0.1 --port=8000
 npm run dev -- --host=127.0.0.1
 ```
 
-Abrir [la aplicación](http://127.0.0.1:8000/proyectos). Detener cada proceso con `Ctrl+C`.
+Abrir [el inicio de sesión](http://127.0.0.1:8000/login) o [crear una cuenta](http://127.0.0.1:8000/registro). Las pantallas de proyectos requieren una sesión activa. Detener cada proceso con `Ctrl+C`.
 
 Vite sirve CSS y JavaScript. Las vistas de proyectos actuales tienen estilos integrados, por lo que funcionan con el backend y todavía no utilizan Vite.
 
@@ -61,7 +63,7 @@ Vite sirve CSS y JavaScript. Las vistas de proyectos actuales tienen estilos int
 
 1. Clonar en `C:\laragon\www\tech-solutions`.
 2. Seleccionar PHP 8.5.12 **Thread Safe x64** para Apache y Node 24.20.0. Abrir una terminal nueva y comprobar `php -v`, `node -v` y `npm -v`.
-3. Ejecutar `composer run setup` dentro del proyecto.
+3. Ejecutar `composer run setup` para usar SQLite o seguir los pasos de MySQL de la U2.
 4. Configurar el sitio con **DocumentRoot en `tech-solutions/public`**, permitir `.htaccess`, habilitar `mod_rewrite` y recargar Apache. Ajustar `APP_URL` en `.env` al dominio local.
 
 Si Node 24.20.0 no aparece, añadir esta entrada en **Tools → Quick add → Configuration**, instalarla desde Quick add y seleccionarla en **Node.js → Version**:
@@ -72,19 +74,47 @@ node-24.20=https://nodejs.org/dist/v24.20.0/node-v24.20.0-win-x64.zip
 
 Apache ejecuta el backend; mantener solo la terminal de `npm run dev -- --host=127.0.0.1` para Vite. También está disponible [la URL de la carpeta local](http://localhost/tech-solutions/public/proyectos). Las reglas Apache incluidas permiten únicamente acceso local y protegen la raíz del proyecto.
 
+### MySQL para la U2
+
+Iniciar MySQL en Laragon, habilitar `pdo_mysql` y crear la base `desarrollo_software_1`. Copiar `.env.example` como `.env` si aún no existe y ajustar estas variables.
+
+```dotenv
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=desarrollo_software_1
+DB_USERNAME=root
+DB_PASSWORD=
+```
+
+Completar `DB_PASSWORD` localmente con la contraseña indicada en la pauta. Ejecutar `composer install` y `php artisan config:clear`. Si `APP_KEY` o `JWT_SECRET` están vacías, generarlas con `php artisan key:generate` y `php artisan jwt:secret`, respectivamente.
+
+```sh
+php artisan migrate
+php artisan db:seed
+```
+
+`migrate` actualiza el esquema de usuarios y `db:seed` prepara los datos de demostración. Abrir `/registro` para crear una cuenta y luego `/login` para ingresar a los proyectos.
+
 ## API JSON
 
 | Método | Ruta | Resultado |
 | --- | --- | --- |
+| POST | `/api/registro` | Usuario registrado (`name`, `email`, `password`) |
+| POST | `/api/login` | JWT de acceso (`email`, `password`) |
 | GET | `/api/proyectos` | Listado de proyectos |
 | GET | `/api/proyectos/{id}` | Proyecto por ID |
 | POST | `/api/proyectos` | Proyecto creado con su ID asignado |
 | PUT | `/api/proyectos/{id}` | Proyecto actualizado |
 | DELETE | `/api/proyectos/{id}` | Proyecto eliminado |
 
-POST y PUT requieren `Nombre`, `Fecha_Inicio`, `Estado`, `Responsable` y `Monto` (numérico, mayor o igual a cero). Envía JSON con `Content-Type: application/json`.
+Las escrituras de proyectos requieren `Nombre`, `Fecha_Inicio`, `Estado`, `Responsable` y `Monto` (numérico, mayor o igual a cero) al crear o actualizar. Envía JSON con `Content-Type: application/json`.
 
-La API y las pantallas usan el mismo archivo de proyectos. Para consumir la API desde un cliente HTTP, empieza con `GET /api/proyectos` y conserva las cookies en las solicitudes siguientes. Para POST, PUT y DELETE, envía también el valor de la cookie `XSRF-TOKEN` decodificado como cabecera `X-XSRF-TOKEN`.
+Registro responde `201` con `message` y `user`. La contraseña debe tener al menos 8 caracteres y como máximo 72 bytes. Inicio de sesión responde `200` con `access_token`, `token_type` y `expires_in` (segundos), o `401` si las credenciales son incorrectas.
+
+La API y las pantallas usan el mismo archivo de proyectos. Envía `Authorization: Bearer <access_token>` en todas las solicitudes a `/api/proyectos`. Un token ausente, inválido o vencido recibe un 401.
+
+`created_by` identifica al usuario que creó el proyecto. El servidor asigna este campo al crear un proyecto con autenticación y conserva el valor en las ediciones. Los registros sin autor conocido devuelven `null`.
 
 GET devuelve los datos directamente. Las escrituras responden con HTTP 200 y las claves `message` y `datos`. Un ID inexistente responde 404 y una entrada inválida, 422. La API devuelve JSON aunque no se envíe la cabecera `Accept`.
 
