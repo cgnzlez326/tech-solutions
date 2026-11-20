@@ -55,7 +55,7 @@ php artisan serve --host=127.0.0.1 --port=8000
 npm run dev -- --host=127.0.0.1
 ```
 
-Abrir [la aplicación](http://127.0.0.1:8000/proyectos). Detener cada proceso con `Ctrl+C`.
+Abrir [el inicio de sesión](http://127.0.0.1:8000/login) o [crear una cuenta](http://127.0.0.1:8000/registro). Las pantallas de proyectos requieren una sesión activa. Detener cada proceso con `Ctrl+C`.
 
 Vite sirve CSS y JavaScript. Las vistas de proyectos actuales tienen estilos integrados, por lo que funcionan con el backend y todavía no utilizan Vite.
 
@@ -63,7 +63,7 @@ Vite sirve CSS y JavaScript. Las vistas de proyectos actuales tienen estilos int
 
 1. Clonar en `C:\laragon\www\tech-solutions`.
 2. Seleccionar PHP 8.5.12 **Thread Safe x64** para Apache y Node 24.20.0. Abrir una terminal nueva y comprobar `php -v`, `node -v` y `npm -v`.
-3. Ejecutar `composer run setup` dentro del proyecto.
+3. Ejecutar `composer run setup` para usar SQLite o seguir los pasos de MySQL de la U2.
 4. Configurar el sitio con **DocumentRoot en `tech-solutions/public`**, permitir `.htaccess`, habilitar `mod_rewrite` y recargar Apache. Ajustar `APP_URL` en `.env` al dominio local.
 
 Si Node 24.20.0 no aparece, añadir esta entrada en **Tools → Quick add → Configuration**, instalarla desde Quick add y seleccionarla en **Node.js → Version**:
@@ -73,6 +73,28 @@ node-24.20=https://nodejs.org/dist/v24.20.0/node-v24.20.0-win-x64.zip
 ```
 
 Apache ejecuta el backend; mantener solo la terminal de `npm run dev -- --host=127.0.0.1` para Vite. También está disponible [la URL de la carpeta local](http://localhost/tech-solutions/public/proyectos). Las reglas Apache incluidas permiten únicamente acceso local y protegen la raíz del proyecto.
+
+### MySQL para la U2
+
+Iniciar MySQL en Laragon, habilitar `pdo_mysql` y crear la base `desarrollo_software_1`. Copiar `.env.example` como `.env` si aún no existe y ajustar estas variables.
+
+```dotenv
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=desarrollo_software_1
+DB_USERNAME=root
+DB_PASSWORD=
+```
+
+Completar `DB_PASSWORD` localmente con la contraseña indicada en la pauta. Ejecutar `composer install` y `php artisan config:clear`. Si `APP_KEY` o `JWT_SECRET` están vacías, generarlas con `php artisan key:generate` y `php artisan jwt:secret`, respectivamente.
+
+```sh
+php artisan migrate
+php artisan db:seed
+```
+
+`migrate` actualiza el esquema de usuarios y `db:seed` prepara los datos de demostración. Abrir `/registro` para crear una cuenta y luego `/login` para ingresar a los proyectos.
 
 ## API JSON
 
