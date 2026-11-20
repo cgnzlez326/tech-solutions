@@ -25,6 +25,8 @@ composer run setup
 
 El setup instala dependencias, prepara `.env`, clave y SQLite, ejecuta migraciones y compila el frontend. Se puede repetir conservando configuración y datos; solo admite el entorno `local` y SQLite predeterminado. No requiere MySQL.
 
+Ejecuta `php artisan jwt:secret` una vez para generar la clave de autenticación en `.env`. Si la instalación ya existía, instala las dependencias con `composer install` y aplica la migración con `php artisan migrate`.
+
 Para crear el JSON con los dos proyectos de ejemplo:
 
 ```sh
@@ -76,13 +78,17 @@ Apache ejecuta el backend; mantener solo la terminal de `npm run dev -- --host=1
 
 | Método | Ruta | Resultado |
 | --- | --- | --- |
+| POST | `/api/registro` | Usuario registrado (`name`, `email`, `password`) |
+| POST | `/api/login` | JWT de acceso (`email`, `password`) |
 | GET | `/api/proyectos` | Listado de proyectos |
 | GET | `/api/proyectos/{id}` | Proyecto por ID |
 | POST | `/api/proyectos` | Proyecto creado con su ID asignado |
 | PUT | `/api/proyectos/{id}` | Proyecto actualizado |
 | DELETE | `/api/proyectos/{id}` | Proyecto eliminado |
 
-POST y PUT requieren `Nombre`, `Fecha_Inicio`, `Estado`, `Responsable` y `Monto` (numérico, mayor o igual a cero). Envía JSON con `Content-Type: application/json`.
+Las escrituras de proyectos requieren `Nombre`, `Fecha_Inicio`, `Estado`, `Responsable` y `Monto` (numérico, mayor o igual a cero) al crear o actualizar. Envía JSON con `Content-Type: application/json`.
+
+Registro responde `201` con `message` y `user`. La contraseña debe tener al menos 8 caracteres y como máximo 72 bytes. Inicio de sesión responde `200` con `access_token`, `token_type` y `expires_in` (segundos), o `401` si las credenciales son incorrectas.
 
 La API y las pantallas usan el mismo archivo de proyectos. Para consumir la API desde un cliente HTTP, empieza con `GET /api/proyectos` y conserva las cookies en las solicitudes siguientes. Para POST, PUT y DELETE, envía también el valor de la cookie `XSRF-TOKEN` decodificado como cabecera `X-XSRF-TOKEN`.
 
