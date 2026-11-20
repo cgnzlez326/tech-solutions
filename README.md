@@ -1,6 +1,6 @@
 # Tech Solutions
 
-Gestión de proyectos con Laravel 13.39.0, Blade y API JSON. Los proyectos son estáticos: las acciones de creación, edición y eliminación validan la solicitud y devuelven su resultado sin guardar cambios.
+Gestión de proyectos con Laravel 13.39.0, Blade y API JSON. El listado se guarda en `storage/app/private/proyectos.json` y se comparte entre navegadores. Git ignora el archivo local.
 
 Autores: Camilo González Moraga y Jeremías Roa Jerez.
 
@@ -24,6 +24,16 @@ composer run setup
 ```
 
 El setup instala dependencias, prepara `.env`, clave y SQLite, ejecuta migraciones y compila el frontend. Se puede repetir conservando configuración y datos; solo admite el entorno `local` y SQLite predeterminado. No requiere MySQL.
+
+Para crear el JSON con los dos proyectos de ejemplo:
+
+```sh
+php artisan db:seed --class=ProyectoSeeder
+```
+
+El seeder conserva el archivo existente. La primera consulta también lo genera si falta. El CRUD de proyectos usa el JSON temporalmente, hasta que el modelo se conecte a SQL.
+
+Si ya tienes un `.env` con `SESSION_DRIVER=database`, cámbialo a `SESSION_DRIVER=file` para guardar en archivos las sesiones que usan los formularios y la protección CSRF. Si usabas configuración en caché, ejecuta `php artisan config:clear`.
 
 En Linux/macOS, PHP necesita permiso de escritura en `storage`, `bootstrap/cache` y `database`. El setup se probó en Windows; Linux/macOS aún no se ejecutaron.
 
@@ -68,13 +78,15 @@ Apache ejecuta el backend; mantener solo la terminal de `npm run dev -- --host=1
 | --- | --- | --- |
 | GET | `/api/proyectos` | Listado de proyectos |
 | GET | `/api/proyectos/{id}` | Proyecto por ID |
-| POST | `/api/proyectos` | Datos de creación validados |
-| PUT | `/api/proyectos/{id}` | Proyecto con los datos de actualización validados |
-| DELETE | `/api/proyectos/{id}` | Proyecto identificado para eliminación |
+| POST | `/api/proyectos` | Proyecto creado con su ID asignado |
+| PUT | `/api/proyectos/{id}` | Proyecto actualizado |
+| DELETE | `/api/proyectos/{id}` | Proyecto eliminado |
 
 POST y PUT requieren `Nombre`, `Fecha_Inicio`, `Estado`, `Responsable` y `Monto` (numérico, mayor o igual a cero). Envía JSON con `Content-Type: application/json`.
 
-GET devuelve los datos directamente. Las escrituras responden con HTTP 200 y las claves `message` y `datos`; no cambian los registros estáticos. Un ID inexistente responde 404 y una entrada inválida, 422. La API devuelve JSON aunque no se envíe la cabecera `Accept`.
+La API y las pantallas usan el mismo archivo de proyectos. Para consumir la API desde un cliente HTTP, empieza con `GET /api/proyectos` y conserva las cookies en las solicitudes siguientes. Para POST, PUT y DELETE, envía también el valor de la cookie `XSRF-TOKEN` decodificado como cabecera `X-XSRF-TOKEN`.
+
+GET devuelve los datos directamente. Las escrituras responden con HTTP 200 y las claves `message` y `datos`. Un ID inexistente responde 404 y una entrada inválida, 422. La API devuelve JSON aunque no se envíe la cabecera `Accept`.
 
 ## Pruebas y documentación
 

@@ -9,14 +9,13 @@
     </style>
 </head>
 <body>
-    <h1>Confirmar solicitud de eliminación</h1>
+    <h1>Confirmar eliminación</h1>
     <p>Proyecto: {{ $proyecto['Nombre'] }}</p>
-    <p>Los datos no se modifican.</p>
     
     <form action="{{ route('proyectos.destroy', $proyecto['Id']) }}" method="POST">
         @csrf
         @method('DELETE')
-        <button type="submit" class="btn-red">Confirmar solicitud</button>
+        <button type="submit" class="btn-red">Eliminar proyecto</button>
         <a href="{{ route('proyectos.index') }}">Cancelar</a>
     </form>
 </body>
