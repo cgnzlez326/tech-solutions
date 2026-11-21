@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Proyecto;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
@@ -37,17 +36,24 @@ class ProyectoApiTest extends TestCase
         ];
     }
 
-    public function test_seeder_creates_private_json_and_reads_return_seed_projects_without_accept_header(): void
+    public function test_seeder_creates_sql_projects_without_duplicating_them(): void
     {
-        Storage::disk('local')->assertMissing('proyectos.json');
+        $this->assertDatabaseCount('proyectos', 0);
         $this->artisan('db:seed', ['--class' => 'ProyectoSeeder'])->assertSuccessful();
-        Storage::disk('local')->assertExists('proyectos.json');
+        $this->artisan('db:seed', ['--class' => 'ProyectoSeeder'])->assertSuccessful();
+        $this->assertDatabaseCount('proyectos', 2);
 
         $creadorId = User::where('email', 'proyectos@tech-solutions.example')->sole()->id;
-        $proyectos = Proyecto::getDatosEstaticos($creadorId)->all();
-
-        $this->get('/api/proyectos')->assertOk()->assertExactJson($proyectos);
-        $this->get('/api/proyectos/2')->assertOk()->assertExactJson($proyectos[1]);
+        $this->get('/api/proyectos')->assertOk()->assertJsonCount(2);
+        $this->get('/api/proyectos/2')->assertOk()->assertExactJson([
+            'Id' => 2,
+            'Nombre' => 'Desarrollo App Móvil',
+            'Fecha_Inicio' => '2026-11-15',
+            'Estado' => 'En progreso',
+            'Responsable' => 'Ana Gómez',
+            'Monto' => 3200000,
+            'created_by' => $creadorId,
+        ]);
     }
 
     public function test_projects_require_a_valid_bearer_token(): void
@@ -70,8 +76,8 @@ class ProyectoApiTest extends TestCase
 
     public function test_api_writes_change_the_persisted_list(): void
     {
-        $proyectos = Proyecto::getDatosEstaticos()->all();
-        $proyecto = ['Id' => 3, 'created_by' => $this->usuarioId] + $this->datos();
+        $proyectos = $this->get('/api/proyectos')->assertExactJson([])->json();
+        $proyecto = ['Id' => 1, 'created_by' => $this->usuarioId] + $this->datos();
 
         $this->call('POST', '/api/proyectos', [], [], [], [
             'CONTENT_TYPE' => 'application/json',
@@ -81,59 +87,67 @@ class ProyectoApiTest extends TestCase
             ->assertHeader('content-type', 'application/json')
             ->assertExactJson(['message' => 'Proyecto creado correctamente.', 'datos' => $proyecto]);
         $this->get('/api/proyectos')->assertExactJson([...$proyectos, $proyecto]);
-        $this->get('/api/proyectos/3')->assertExactJson($proyecto);
+        $this->assertDatabaseHas('proyectos', ['id' => 1, 'created_by' => $this->usuarioId]);
+        $this->get('/api/proyectos/1')->assertExactJson($proyecto);
 
         $proyecto['Nombre'] = 'Nombre modificado por API';
 
-        $this->put('/api/proyectos/3', ['created_by' => 99] + $proyecto)
+        $this->put('/api/proyectos/1', ['created_by' => 99] + $proyecto)
             ->assertOk()
             ->assertExactJson(['message' => 'Proyecto actualizado correctamente.', 'datos' => $proyecto]);
         $this->get('/api/proyectos')->assertExactJson([...$proyectos, $proyecto]);
-        $this->get('/api/proyectos/3')->assertExactJson($proyecto);
+        $this->get('/api/proyectos/1')->assertExactJson($proyecto);
 
-        $this->delete('/api/proyectos/3')
+        $this->delete('/api/proyectos/1')
             ->assertOk()
             ->assertExactJson(['message' => 'Proyecto eliminado correctamente.', 'datos' => $proyecto]);
         $this->get('/api/proyectos')->assertExactJson($proyectos);
-        $this->get('/api/proyectos/3')->assertNotFound();
-        $this->post('/api/proyectos', $this->datos())->assertJsonPath('datos.Id', 4);
+        $this->get('/api/proyectos/1')->assertNotFound();
+        $this->post('/api/proyectos', $this->datos())->assertJsonPath('datos.Id', 2);
     }
 
-    public function test_empty_list_persists_after_reseeding(): void
+    public function test_an_empty_legacy_file_does_not_trigger_example_projects(): void
     {
-        $proyectos = Proyecto::getDatosEstaticos()->all();
-
-        $this->delete('/api/proyectos/1')->assertOk();
-        $this->get('/api/proyectos')->assertExactJson([$proyectos[1]]);
-        $this->delete('/api/proyectos/2')->assertOk();
-        $this->get('/api/proyectos')->assertContent('[]');
+        Storage::disk('local')->put('proyectos.json', '{"siguiente_id":3,"registros":[]}');
+        (require database_path('migrations/2026_11_21_053554_importar_proyectos_json.php'))->up();
 
         $this->artisan('db:seed', ['--class' => 'ProyectoSeeder'])->assertSuccessful();
         $this->get('/api/proyectos')->assertContent('[]');
-        $this->post('/api/proyectos', $this->datos())->assertJsonPath('datos.Id', 3);
     }
 
     public function test_legacy_projects_have_no_attributed_author(): void
     {
-        $json = json_encode(['siguiente_id' => 2, 'registros' => [1 => ['Id' => 1] + $this->datos()]], JSON_THROW_ON_ERROR);
+        $json = json_encode(['siguiente_id' => 9, 'registros' => [
+            ['Id' => 7] + $this->datos(),
+            ['Id' => 8, 'created_by' => $this->usuarioId] + $this->datos(),
+        ]], JSON_THROW_ON_ERROR);
         Storage::disk('local')->put('proyectos.json', $json);
 
-        $this->get('/api/proyectos/1')->assertOk()->assertExactJson(['Id' => 1, 'created_by' => null] + $this->datos());
+        (require database_path('migrations/2026_11_21_053554_importar_proyectos_json.php'))->up();
+
+        $this->get('/api/proyectos/7')->assertOk()->assertExactJson(['Id' => 7, 'created_by' => null] + $this->datos());
+        $this->get('/api/proyectos/8')->assertOk()->assertJsonPath('created_by', $this->usuarioId);
+        $this->post('/api/proyectos', $this->datos())->assertJsonPath('datos.Id', 9);
         $this->assertSame($json, Storage::disk('local')->get('proyectos.json'));
     }
 
-    public function test_write_does_not_replace_an_unreadable_json_file(): void
+    public function test_import_rejects_an_unreadable_json_file_without_replacing_it(): void
     {
         $archivo = Storage::disk('local');
         $archivo->put('proyectos.json', '{');
 
-        $this->post('/api/proyectos', $this->datos())->assertInternalServerError();
-
-        $this->assertSame('{', $archivo->get('proyectos.json'));
+        $this->expectException(\JsonException::class);
+        try {
+            (require database_path('migrations/2026_11_21_053554_importar_proyectos_json.php'))->up();
+        } finally {
+            $this->assertDatabaseCount('proyectos', 0);
+            $this->assertSame('{', $archivo->get('proyectos.json'));
+        }
     }
 
     public function test_write_validation_errors_are_json_without_accept_header(): void
     {
+        $this->seed();
         $datosInvalidos = [
             'Nombre' => 'Proyecto inválido',
             'Fecha_Inicio' => 'fecha-inválida',

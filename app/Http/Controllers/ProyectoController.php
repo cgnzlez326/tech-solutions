@@ -2,13 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Proyecto;
+use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class ProyectoController extends Controller
 {
     public function index(Request $request) {
-        $proyectos = Proyecto::getProyectos()->values();
+        $proyectos = Proyecto::orderBy('id')->get()->map->datos();
 
         if ($request->is('api/*')) {
             return response()->json($proyectos);
@@ -22,7 +24,9 @@ class ProyectoController extends Controller
     }
 
     public function store(Request $request) {
-        $proyecto = Proyecto::crear($this->validarDatos($request), $request->user()?->getAuthIdentifier());
+        $proyecto = Proyecto::create($this->validarDatos($request) + [
+            'created_by' => $request->user()->getAuthIdentifier(),
+        ])->datos();
         $message = 'Proyecto creado correctamente.';
 
         return $request->is('api/*')
@@ -31,8 +35,7 @@ class ProyectoController extends Controller
     }
 
     public function show(Request $request, $id) {
-        $proyecto = Proyecto::getProyectos()->firstWhere('Id', $id);
-        abort_unless($proyecto, 404, 'Proyecto no encontrado.');
+        $proyecto = $this->buscarProyecto($id)->datos();
 
         if ($request->is('api/*')) {
             return response()->json($proyecto);
@@ -42,25 +45,24 @@ class ProyectoController extends Controller
     }
 
     public function edit($id) {
-        $proyecto = Proyecto::getProyectos()->firstWhere('Id', $id);
-        abort_unless($proyecto, 404);
+        $proyecto = $this->buscarProyecto($id)->datos();
 
         return view('proyectos.edit', compact('proyecto'));
     }
 
     public function delete($id) {
-        $proyecto = Proyecto::getProyectos()->firstWhere('Id', $id);
-        abort_unless($proyecto, 404);
+        $proyecto = $this->buscarProyecto($id)->datos();
 
         return view('proyectos.delete', compact('proyecto'));
     }
 
     public function update(Request $request, $id) {
-        $proyecto = Proyecto::getProyectos()->firstWhere('Id', $id);
-        abort_unless($proyecto, 404, 'Proyecto no encontrado.');
+        $proyecto = DB::transaction(function () use ($id, $request) {
+            $registro = $this->buscarProyecto($id, bloquear: true);
+            $registro->update($this->validarDatos($request));
 
-        $proyecto = Proyecto::actualizar($proyecto['Id'], $this->validarDatos($request));
-        abort_unless($proyecto, 404, 'Proyecto no encontrado.');
+            return $registro->datos();
+        });
         $message = 'Proyecto actualizado correctamente.';
 
         return $request->is('api/*')
@@ -69,8 +71,12 @@ class ProyectoController extends Controller
     }
 
     public function destroy(Request $request, $id) {
-        $proyecto = Proyecto::eliminar($id);
-        abort_unless($proyecto, 404, 'Proyecto no encontrado.');
+        $proyecto = DB::transaction(function () use ($id) {
+            $registro = $this->buscarProyecto($id, bloquear: true);
+            $registro->delete();
+
+            return $registro->datos();
+        });
         $message = 'Proyecto eliminado correctamente.';
 
         return $request->is('api/*')
@@ -78,13 +84,31 @@ class ProyectoController extends Controller
             : redirect()->route('proyectos.index')->with('success', $message);
     }
 
+    private function buscarProyecto(string $id, bool $bloquear = false): Proyecto
+    {
+        abort_unless(ctype_digit($id), 404, 'Proyecto no encontrado.');
+        $query = Proyecto::whereKey($id);
+        $proyecto = $bloquear ? $query->lockForUpdate()->first() : $query->first();
+        abort_unless($proyecto, 404, 'Proyecto no encontrado.');
+
+        return $proyecto;
+    }
+
     private function validarDatos(Request $request): array {
-        return $request->validate([
+        $datos = $request->validate([
             'Nombre' => ['required', 'string', 'max:255'],
             'Fecha_Inicio' => ['required', 'date'],
             'Estado' => ['required', 'string', 'max:255'],
             'Responsable' => ['required', 'string', 'max:255'],
-            'Monto' => ['required', 'numeric', 'min:0'],
+            'Monto' => ['required', 'numeric', 'min:0', 'max:'.PHP_FLOAT_MAX],
         ]);
+
+        return [
+            'nombre' => $datos['Nombre'],
+            'fecha_inicio' => Carbon::parse($datos['Fecha_Inicio'])->toDateString(),
+            'estado' => $datos['Estado'],
+            'responsable' => $datos['Responsable'],
+            'monto' => $datos['Monto'],
+        ];
     }
 }

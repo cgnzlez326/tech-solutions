@@ -1,6 +1,6 @@
 # Tech Solutions
 
-Gestión de proyectos con Laravel 13.39.0, Blade y API JSON. El listado se guarda en `storage/app/private/proyectos.json` y se comparte entre navegadores. Git ignora el archivo local.
+Gestión de proyectos con Laravel 13.39.0, Blade y API JSON. Los usuarios y proyectos se guardan en SQLite o MySQL mediante Eloquent.
 
 Autores: Camilo González Moraga y Jeremías Roa Jerez.
 
@@ -27,13 +27,13 @@ El setup instala dependencias, prepara `.env`, clave y SQLite, ejecuta migracion
 
 Ejecuta `php artisan jwt:secret` una vez para generar la clave de autenticación en `.env`. Si la instalación ya existía, instala las dependencias con `composer install` y aplica la migración con `php artisan migrate`.
 
-Para crear el JSON con los dos proyectos de ejemplo:
+Para cargar los dos proyectos de ejemplo en una instalación nueva:
 
 ```sh
 php artisan db:seed --class=ProyectoSeeder
 ```
 
-El seeder asigna los ejemplos de un archivo nuevo a un usuario de demostración. Conserva los archivos existentes. La primera consulta también genera el archivo si falta. El CRUD de proyectos usa el JSON temporalmente, hasta que el modelo se conecte a SQL.
+El seeder asigna los ejemplos a un usuario de demostración. Al actualizar una instalación, la migración importa los registros de `storage/app/private/proyectos.json` si existe. Conserva sus IDs y el archivo original. Los proyectos con un autor desconocido quedan con `created_by` nulo. Ejecuta la migración con la misma base de usuarios para conservar la autoría.
 
 Si ya tienes un `.env` con `SESSION_DRIVER=database`, cámbialo a `SESSION_DRIVER=file` para guardar en archivos las sesiones que usan los formularios y la protección CSRF. Si usabas configuración en caché, ejecuta `php artisan config:clear`.
 
@@ -94,7 +94,7 @@ php artisan migrate
 php artisan db:seed
 ```
 
-`migrate` actualiza el esquema de usuarios y `db:seed` prepara los datos de demostración. Abrir `/registro` para crear una cuenta y luego `/login` para ingresar a los proyectos.
+`migrate` crea o actualiza el esquema de usuarios y proyectos. `db:seed` prepara los datos de demostración en una instalación nueva. Abrir `/registro` para crear una cuenta y luego `/login` para ingresar a los proyectos.
 
 ## API JSON
 
@@ -112,7 +112,7 @@ Las escrituras de proyectos requieren `Nombre`, `Fecha_Inicio`, `Estado`, `Respo
 
 Registro responde `201` con `message` y `user`. La contraseña debe tener al menos 8 caracteres y como máximo 72 bytes. Inicio de sesión responde `200` con `access_token`, `token_type` y `expires_in` (segundos), o `401` si las credenciales son incorrectas.
 
-La API y las pantallas usan el mismo archivo de proyectos. Envía `Authorization: Bearer <access_token>` en todas las solicitudes a `/api/proyectos`. Un token ausente, inválido o vencido recibe un 401.
+La API y las pantallas usan la misma tabla de proyectos. Envía `Authorization: Bearer <access_token>` en todas las solicitudes a `/api/proyectos`. Un token ausente, inválido o vencido recibe un 401.
 
 `created_by` identifica al usuario que creó el proyecto. El servidor asigna este campo al crear un proyecto con autenticación y conserva el valor en las ediciones. Los registros sin autor conocido devuelven `null`.
 
