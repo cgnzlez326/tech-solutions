@@ -16,6 +16,7 @@ class ProyectoFlowTest extends TestCase
     {
         parent::setUp();
 
+        $this->seed();
         $this->actingAs(User::factory()->create(), 'web');
         Http::fake(['*' => Http::response(['serie' => [['fecha' => '2026-10-30', 'valor' => 40000]]])]);
     }

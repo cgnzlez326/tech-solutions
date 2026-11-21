@@ -22,7 +22,7 @@ class AuthWebTest extends TestCase
 
         $this->post('/login', $credenciales)->assertRedirect(route('proyectos.index'));
         $this->assertAuthenticatedAs(User::sole(), 'web');
-        $this->get('/proyectos/1')->assertOk();
+        $this->get('/proyectos')->assertOk();
 
         $this->post('/logout')->assertRedirect(route('login'));
         $this->assertGuest('web');
